@@ -3,53 +3,74 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101014" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)">
-  <meta name="description" content="Mealio, a minimalist meal tracker.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Mealio, a minimalist recipe saver.">
   <title>Mealio</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍳</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app">
-    <header class="header">
-      <h1>Mealio</h1>
-      <p class="tagline" id="today-label"></p>
-    </header>
 
-    <form class="entry" id="meal-form" autocomplete="off">
+    <!-- List view -->
+    <section id="list-view">
+      <header class="header">
+        <h1>Mealio</h1>
+        <button type="button" class="new-btn" id="new-btn">+ New recipe</button>
+      </header>
+
       <input
-        type="text"
-        id="meal-name"
-        placeholder="What did you eat?"
-        maxlength="80"
-        required
+        type="search"
+        id="search"
+        class="search"
+        placeholder="Search recipes"
+        autocomplete="off"
       >
-      <div class="type-row" id="type-row" role="radiogroup" aria-label="Meal type">
-        <button type="button" class="type-btn" data-type="breakfast">Breakfast</button>
-        <button type="button" class="type-btn" data-type="lunch">Lunch</button>
-        <button type="button" class="type-btn" data-type="dinner">Dinner</button>
-        <button type="button" class="type-btn" data-type="snack">Snack</button>
-      </div>
-      <div class="add-row">
-        <input
-          type="number"
-          id="meal-calories"
-          placeholder="kcal (optional)"
-          min="0"
-          max="10000"
-          inputmode="numeric"
-        >
-        <button type="submit" class="add-btn">Add</button>
-      </div>
-    </form>
 
-    <section id="days" class="days" aria-live="polite"></section>
+      <div id="cards" class="cards"></div>
 
-    <p class="empty" id="empty-state" hidden>Nothing logged yet. Add your first meal above.</p>
+      <p class="empty" id="empty-state" hidden>No recipes yet. Save your first one.</p>
+    </section>
+
+    <!-- Detail view -->
+    <section id="detail-view" hidden>
+      <header class="subheader">
+        <button type="button" class="back-btn" id="detail-back">&larr; Back</button>
+        <div class="subheader-actions">
+          <button type="button" class="text-btn" id="edit-btn">Edit</button>
+          <button type="button" class="text-btn danger" id="delete-btn">Delete</button>
+        </div>
+      </header>
+      <article class="detail card">
+        <h2 id="detail-title"></h2>
+        <h3>Ingredients</h3>
+        <ul id="detail-ingredients"></ul>
+        <h3>Instructions</h3>
+        <ol id="detail-steps"></ol>
+      </article>
+    </section>
+
+    <!-- Editor view -->
+    <section id="editor-view" hidden>
+      <header class="subheader">
+        <button type="button" class="back-btn" id="editor-cancel">&larr; Cancel</button>
+      </header>
+      <form id="recipe-form" class="editor card" autocomplete="off">
+        <label for="f-title">Title</label>
+        <input type="text" id="f-title" maxlength="120" required placeholder="e.g. Lemon pasta">
+
+        <label for="f-ingredients">Ingredients <span class="hint">one per line</span></label>
+        <textarea id="f-ingredients" rows="6" required placeholder="200g spaghetti&#10;1 lemon&#10;olive oil"></textarea>
+
+        <label for="f-steps">Instructions <span class="hint">one step per line</span></label>
+        <textarea id="f-steps" rows="8" placeholder="Boil the pasta.&#10;Zest and juice the lemon."></textarea>
+
+        <button type="submit" class="save-btn">Save recipe</button>
+      </form>
+    </section>
 
     <footer class="footer">
-      <p>Data stays on this device.</p>
+      <p>Recipes are stored on this device.</p>
     </footer>
   </main>
 

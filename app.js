@@ -1,222 +1,219 @@
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "mealio.meals";
+  var STORAGE_KEY = "mealio.recipes";
 
-  var form = document.getElementById("meal-form");
-  var nameInput = document.getElementById("meal-name");
-  var caloriesInput = document.getElementById("meal-calories");
-  var typeRow = document.getElementById("type-row");
-  var daysEl = document.getElementById("days");
+  var listView = document.getElementById("list-view");
+  var detailView = document.getElementById("detail-view");
+  var editorView = document.getElementById("editor-view");
+
+  var cardsEl = document.getElementById("cards");
   var emptyEl = document.getElementById("empty-state");
-  var todayLabel = document.getElementById("today-label");
+  var searchInput = document.getElementById("search");
 
-  var selectedType = defaultTypeForNow();
+  var detailTitle = document.getElementById("detail-title");
+  var detailIngredients = document.getElementById("detail-ingredients");
+  var detailSteps = document.getElementById("detail-steps");
 
-  function defaultTypeForNow() {
-    var h = new Date().getHours();
-    if (h < 11) return "breakfast";
-    if (h < 15) return "lunch";
-    if (h < 21) return "dinner";
-    return "snack";
-  }
+  var form = document.getElementById("recipe-form");
+  var fTitle = document.getElementById("f-title");
+  var fIngredients = document.getElementById("f-ingredients");
+  var fSteps = document.getElementById("f-steps");
 
-  function loadMeals() {
+  var currentId = null; // recipe open in detail view
+  var editingId = null; // recipe open in editor, null means new
+
+  function loadRecipes() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      var parsed = raw ? JSON.parse(raw) : [];
+      var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
   }
 
-  function saveMeals(meals) {
+  function saveRecipes(recipes) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
     } catch (e) {
       // Storage unavailable (private mode); the app still works for the session.
     }
   }
 
-  function dayKey(ts) {
-    var d = new Date(ts);
-    return (
-      d.getFullYear() +
-      "-" +
-      String(d.getMonth() + 1).padStart(2, "0") +
-      "-" +
-      String(d.getDate()).padStart(2, "0")
-    );
-  }
-
-  function dayTitle(key) {
-    var today = dayKey(Date.now());
-    var yesterday = dayKey(Date.now() - 86400000);
-    if (key === today) return "Today";
-    if (key === yesterday) return "Yesterday";
-    var parts = key.split("-");
-    var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    return d.toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
+  function findRecipe(id) {
+    return loadRecipes().find(function (r) {
+      return r.id === id;
     });
   }
 
-  function timeLabel(ts) {
-    return new Date(ts).toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+  function lines(text) {
+    return text
+      .split("\n")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
   }
 
-  function capitalize(s) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
+  function show(view) {
+    listView.hidden = view !== listView;
+    detailView.hidden = view !== detailView;
+    editorView.hidden = view !== editorView;
+    window.scrollTo(0, 0);
   }
 
-  function render() {
-    var meals = loadMeals().slice().sort(function (a, b) {
-      return b.ts - a.ts;
-    });
+  /* List */
 
-    daysEl.textContent = "";
-    emptyEl.hidden = meals.length > 0;
-
-    var groups = {};
-    var order = [];
-    meals.forEach(function (m) {
-      var key = dayKey(m.ts);
-      if (!groups[key]) {
-        groups[key] = [];
-        order.push(key);
-      }
-      groups[key].push(m);
-    });
-
-    order.forEach(function (key) {
-      var section = document.createElement("section");
-
-      var head = document.createElement("div");
-      head.className = "day-head";
-
-      var title = document.createElement("span");
-      title.className = "day-title";
-      title.textContent = dayTitle(key);
-      head.appendChild(title);
-
-      var totalKcal = groups[key].reduce(function (sum, m) {
-        return sum + (m.kcal || 0);
-      }, 0);
-      if (totalKcal > 0) {
-        var total = document.createElement("span");
-        total.className = "day-total";
-        total.textContent = totalKcal + " kcal";
-        head.appendChild(total);
-      }
-
-      var list = document.createElement("ul");
-      list.className = "meal-list";
-
-      groups[key].forEach(function (m) {
-        var li = document.createElement("li");
-        li.className = "meal";
-
-        var info = document.createElement("div");
-        info.className = "meal-info";
-
-        var name = document.createElement("div");
-        name.className = "meal-name";
-        name.textContent = m.name;
-
-        var meta = document.createElement("div");
-        meta.className = "meal-meta";
-        var type = document.createElement("span");
-        type.className = "meal-type";
-        type.textContent = capitalize(m.type);
-        meta.appendChild(type);
-        meta.appendChild(document.createTextNode(" · " + timeLabel(m.ts)));
-
-        info.appendChild(name);
-        info.appendChild(meta);
-        li.appendChild(info);
-
-        if (m.kcal) {
-          var kcal = document.createElement("span");
-          kcal.className = "meal-kcal";
-          kcal.textContent = m.kcal + " kcal";
-          li.appendChild(kcal);
-        }
-
-        var del = document.createElement("button");
-        del.className = "del-btn";
-        del.type = "button";
-        del.setAttribute("aria-label", "Delete " + m.name);
-        del.textContent = "×";
-        del.addEventListener("click", function () {
-          var next = loadMeals().filter(function (x) {
-            return x.id !== m.id;
-          });
-          saveMeals(next);
-          render();
-        });
-        li.appendChild(del);
-
-        list.appendChild(li);
+  function renderList() {
+    var query = searchInput.value.trim().toLowerCase();
+    var recipes = loadRecipes()
+      .slice()
+      .sort(function (a, b) {
+        return b.updated - a.updated;
+      })
+      .filter(function (r) {
+        if (!query) return true;
+        return (
+          r.title.toLowerCase().indexOf(query) !== -1 ||
+          r.ingredients.join("\n").toLowerCase().indexOf(query) !== -1
+        );
       });
 
-      section.appendChild(head);
-      section.appendChild(list);
-      daysEl.appendChild(section);
+    cardsEl.textContent = "";
+    emptyEl.hidden = loadRecipes().length > 0;
+
+    recipes.forEach(function (r) {
+      var card = document.createElement("button");
+      card.type = "button";
+      card.className = "card recipe-card";
+
+      var h2 = document.createElement("h2");
+      h2.textContent = r.title;
+
+      var p = document.createElement("p");
+      p.textContent = r.ingredients.join(", ");
+
+      card.appendChild(h2);
+      card.appendChild(p);
+      card.addEventListener("click", function () {
+        openDetail(r.id);
+      });
+      cardsEl.appendChild(card);
     });
   }
 
-  function setType(type) {
-    selectedType = type;
-    Array.prototype.forEach.call(
-      typeRow.querySelectorAll(".type-btn"),
-      function (btn) {
-        var active = btn.dataset.type === type;
-        btn.classList.toggle("active", active);
-        btn.setAttribute("aria-checked", active ? "true" : "false");
-        btn.setAttribute("role", "radio");
-      }
-    );
+  /* Detail */
+
+  function openDetail(id) {
+    var r = findRecipe(id);
+    if (!r) return;
+    currentId = id;
+
+    detailTitle.textContent = r.title;
+
+    detailIngredients.textContent = "";
+    r.ingredients.forEach(function (ing) {
+      var li = document.createElement("li");
+      li.textContent = ing;
+      detailIngredients.appendChild(li);
+    });
+
+    detailSteps.textContent = "";
+    r.steps.forEach(function (step) {
+      var li = document.createElement("li");
+      li.textContent = step;
+      detailSteps.appendChild(li);
+    });
+    detailSteps.previousElementSibling.hidden = r.steps.length === 0;
+    detailSteps.hidden = r.steps.length === 0;
+
+    show(detailView);
   }
 
-  typeRow.addEventListener("click", function (e) {
-    var btn = e.target.closest(".type-btn");
-    if (btn) setType(btn.dataset.type);
-  });
+  /* Editor */
+
+  function openEditor(id) {
+    editingId = id || null;
+    var r = id ? findRecipe(id) : null;
+    fTitle.value = r ? r.title : "";
+    fIngredients.value = r ? r.ingredients.join("\n") : "";
+    fSteps.value = r ? r.steps.join("\n") : "";
+    show(editorView);
+    fTitle.focus();
+  }
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var name = nameInput.value.trim();
-    if (!name) return;
+    var title = fTitle.value.trim();
+    var ingredients = lines(fIngredients.value);
+    if (!title || ingredients.length === 0) return;
 
-    var kcal = parseInt(caloriesInput.value, 10);
-    var meals = loadMeals();
-    meals.push({
-      id: Date.now() + "-" + Math.random().toString(36).slice(2, 8),
-      name: name,
-      type: selectedType,
-      kcal: kcal > 0 ? kcal : null,
-      ts: Date.now(),
-    });
-    saveMeals(meals);
-
-    nameInput.value = "";
-    caloriesInput.value = "";
-    nameInput.focus();
-    render();
+    var recipes = loadRecipes();
+    if (editingId) {
+      var existing = recipes.find(function (r) {
+        return r.id === editingId;
+      });
+      if (existing) {
+        existing.title = title;
+        existing.ingredients = ingredients;
+        existing.steps = lines(fSteps.value);
+        existing.updated = Date.now();
+      }
+      saveRecipes(recipes);
+      renderList();
+      openDetail(editingId);
+    } else {
+      var recipe = {
+        id: Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+        title: title,
+        ingredients: ingredients,
+        steps: lines(fSteps.value),
+        updated: Date.now(),
+      };
+      recipes.push(recipe);
+      saveRecipes(recipes);
+      renderList();
+      openDetail(recipe.id);
+    }
   });
 
-  todayLabel.textContent = new Date().toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
+  /* Wiring */
+
+  document.getElementById("new-btn").addEventListener("click", function () {
+    openEditor(null);
   });
 
-  setType(selectedType);
-  render();
+  document.getElementById("detail-back").addEventListener("click", function () {
+    currentId = null;
+    show(listView);
+  });
+
+  document.getElementById("edit-btn").addEventListener("click", function () {
+    openEditor(currentId);
+  });
+
+  document.getElementById("delete-btn").addEventListener("click", function () {
+    var r = findRecipe(currentId);
+    if (!r) return;
+    if (!window.confirm('Delete "' + r.title + '"?')) return;
+    saveRecipes(
+      loadRecipes().filter(function (x) {
+        return x.id !== currentId;
+      })
+    );
+    currentId = null;
+    renderList();
+    show(listView);
+  });
+
+  document.getElementById("editor-cancel").addEventListener("click", function () {
+    if (editingId) {
+      openDetail(editingId);
+    } else {
+      show(listView);
+    }
+  });
+
+  searchInput.addEventListener("input", renderList);
+
+  renderList();
+  show(listView);
 })();
