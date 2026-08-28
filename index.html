@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101014" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)">
+  <meta name="description" content="Mealio, a minimalist meal tracker.">
+  <title>Mealio</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>Mealio</h1>
+      <p class="tagline" id="today-label"></p>
+    </header>
+
+    <form class="entry" id="meal-form" autocomplete="off">
+      <input
+        type="text"
+        id="meal-name"
+        placeholder="What did you eat?"
+        maxlength="80"
+        required
+      >
+      <div class="type-row" id="type-row" role="radiogroup" aria-label="Meal type">
+        <button type="button" class="type-btn" data-type="breakfast">Breakfast</button>
+        <button type="button" class="type-btn" data-type="lunch">Lunch</button>
+        <button type="button" class="type-btn" data-type="dinner">Dinner</button>
+        <button type="button" class="type-btn" data-type="snack">Snack</button>
+      </div>
+      <div class="add-row">
+        <input
+          type="number"
+          id="meal-calories"
+          placeholder="kcal (optional)"
+          min="0"
+          max="10000"
+          inputmode="numeric"
+        >
+        <button type="submit" class="add-btn">Add</button>
+      </div>
+    </form>
+
+    <section id="days" class="days" aria-live="polite"></section>
+
+    <p class="empty" id="empty-state" hidden>Nothing logged yet. Add your first meal above.</p>
+
+    <footer class="footer">
+      <p>Data stays on this device.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
